@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Book Appointment</title>
+</head>
+
+<body>
+  <h1>Select Appointment Types</h1>
+  <form id="appointmentForm">
+    <label>Appointment Types: Select all appointments required for all family members.</label><br>
+    <input type="checkbox" id="appointmentTypeA" name="appointmentType" value="Appointment Type A">
+    <label for="appointmentTypeA">Standard Appointment</label><br>
+    <input type="checkbox" id="appointmentTypeB" name="appointmentType" value="Appointment Type B">
+    <label for="appointmentTypeB">Appointment Type B</label><br>
+    <input type="checkbox" id="appointmentTypeC" name="appointmentType" value="Appointment Type C">
+    <label for="appointmentTypeC">Appointment Type C</label><br><br>
+    <div id="appointmentCounts"></div>
+    <label for="name">Name:</label>
+    <input type="text" id="name" name="name" required><br><br>
+    <label for="email">Email:</label>
+    <input type="email" id="email" name="email" required><br><br>
+    <input type="submit" value="Next">
+  </form>
+
+  <div id="calendar"></div>
+
+  <script>
+    document.getElementById('appointmentTypeA').addEventListener('change', updateAppointmentCounts);
+    document.getElementById('appointmentTypeB').addEventListener('change', updateAppointmentCounts);
+    document.getElementById('appointmentTypeC').addEventListener('change', updateAppointmentCounts);
+
+    function updateAppointmentCounts() {
+      var countsHtml = '';
+
+      if (document.getElementById('appointmentTypeA').checked) {
+        countsHtml += `
+            <label for="appointmentTypeACount">Number of Appointment Type A Appointments:</label>
+            <select id="appointmentTypeACount" name="appointmentTypeACount">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+            </select><br><br>
+          `;
+      }
+
+      if (document.getElementById('appointmentTypeB').checked) {
+        countsHtml += `
+            <label for="appointmentTypeBCount">Number of Appointment Type B Appointments:</label>
+            <select id="appointmentTypeBCount" name="appointmentTypeBCount">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <!-- Add more options as needed -->
+            </select><br><br>
+          `;
+      }
+
+      if (document.getElementById('appointmentTypeC').checked) {
+        countsHtml += `
+            <label for="appointmentTypeCCount">Number of Appointment Type C Appointments:</label>
+            <select id="appointmentTypeCCount" name="appointmentTypeCCount">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <!-- Add more options as needed -->
+            </select><br><br>
+          `;
+      }
+
+      document.getElementById('appointmentCounts').innerHTML = countsHtml;
+    }
+
+    document.getElementById('appointmentForm').addEventListener('submit', function (event) {
+      event.preventDefault();
+
+      var appointmentTypes = [];
+      if (document.getElementById('appointmentTypeA').checked) {
+        appointmentTypes.push('Appointment Type A');
+      }
+      if (document.getElementById('appointmentTypeB').checked) {
+        appointmentTypes.push('Appointment Type B');
+      }
+      if (document.getElementById('appointmentTypeC').checked) {
+        appointmentTypes.push('Appointment Type C');
+      }
+
+      var appointmentCounts = {};
+      if (document.getElementById('appointmentTypeACount')) {
+        appointmentCounts['Appointment Type A'] = document.getElementById('appointmentTypeACount').value;
+      }
+      if (document.getElementById('appointmentTypeBCount')) {
+        appointmentCounts['Appointment Type B'] = document.getElementById('appointmentTypeBCount').value;
+      }
+      if (document.getElementById('appointmentTypeCCount')) {
+        appointmentCounts['Appointment Type C'] = document.getElementById('appointmentTypeCCount').value;
+      }
+
+      var name = document.getElementById('name').value;
+      var email = document.getElementById('email').value;
+
+      // Pass the selected appointment types, counts, name, and email to a function that handles the next step
+      showCalendar(appointmentTypes, appointmentCounts, name, email);
+    });
+
+    function showCalendar(appointmentTypes, appointmentCounts, name, email) {
+      var calendarId = 'dcuzzi67@gmail.com'; // Replace 'your_calendar_id' with your actual calendar ID
+      var calendar = CalendarApp.getCalendarById(calendarId);
+      var events = calendar.getEvents(new Date(), new Date(new Date().getTime() + (7 * 24 * 60 * 60 * 1000))); // Fetch events for the next 7 days
+
+      var availableSlots = getAvailableTimeSlots(events, appointmentTypes, appointmentCounts);
+
+      // Pass the available time slots and user information to the frontend for display
+      return { availableSlots: availableSlots, name: name, email: email };
+    }
+
+    function getAvailableTimeSlots(events, appointmentTypes, appointmentCounts) {
+      var availableSlots = [];
+      var durations = {
+        'Appointment Type A': 30,
+        'Appointment Type B': 60,
+        'Appointment Type C': 90
+        // Add more appointment types and durations as needed
+      };
+
+      appointmentTypes.forEach(function (type) {
+        var count = appointmentCounts[type];
+        for (var i = 0; i < events.length; i++) {
+          var event = events[i];
+          var startTime = event.getStartTime();
+          var endTime = event.getEndTime();
+          var slotDuration = (endTime.getTime() - startTime.getTime()) / (1000 * 60); // Duration in minutes
+
+          // Check if the slot is long enough for the requested duration and if it's not already booked
+          if (slotDuration >= durations[type] && !isSlotBooked(startTime, endTime)) {
+            availableSlots.push({ startTime: startTime, endTime: endTime });
+            count--;
+            if (count === 0) break; // Move to the next appointment type
+          }
+        }
+      });
+
+      return availableSlots;
+    }
+
+  </script>
+</body>
+
+</html>
